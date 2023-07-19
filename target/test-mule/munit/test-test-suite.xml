@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="test-test-suite.xml" />
+	<munit:test name="test-test-suite-testFlowTest" doc:id="3900d037-db5c-49b4-8bff-38d8d153c245" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock when" doc:id="be6a77ee-792b-407c-8c93-aa29e4943ab1" processor="scheduler">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Scheduler" attributeName="doc:name" />
+					<munit-tools:with-attribute whereValue="18feb106-d7cd-42d0-b46f-85d5a2d79488" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to testFlow" doc:id="01b6c106-c901-4221-b496-bf48839e70f8" name="testFlow"/>
+		</munit:execution>
+	</munit:test>
+
+
+</mule>

@@ -1,0 +1,150 @@
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+<flow name="ot-events-queue-implementation-flow" doc:id="3ad490e5-b8fc-45ab-9f47-3efde49925d0">
+<ee:transform doc:name="Transform Message" doc:id="ea9edbf2-69b5-4f24-b5a7-b1e92d93ca9d">
+<ee:message> </ee:message>
+<ee:variables>
+<ee:set-variable variableName="amazonPath"><![CDATA[ %dw 2.0 output application/json --- payload.Entry.ExternalStorgaePath ]]>
+</ee:set-variable>
+<ee:set-variable variableName="eventType"><![CDATA[ %dw 2.0 output application/json --- attributes.headers.xml_type ]]>
+</ee:set-variable>
+<ee:set-variable variableName="taskNumber"><![CDATA[ %dw 2.0 output application/json --- payload.Entry.Task.TaskNumber ]]>
+</ee:set-variable>
+<ee:set-variable variableName="taskStatus"><![CDATA[ %dw 2.0 output application/json 
+ --- 
+ attributes.headers.task_status ]]>
+</ee:set-variable>
+</ee:variables>
+</ee:transform>
+<logger level="INFO" doc:name="Logger" doc:id="6ce60b0b-4a50-4aa8-8d4b-b652bd499d12" message="Task Number in payload : #[vars.taskNumber]"/>
+<logger level="INFO" doc:name="Logger" doc:id="16528e0b-5d9c-48c4-9d05-401766ddf926" message="Task number in attribues : #[attributes.headers.task_number]"/>
+<logger level="INFO" doc:name="Logger" doc:id="27409395-0c76-40e4-a5ce-44176837bed3" message="OT Task Status : #[vars.taskStatus]"/>
+<logger level="INFO" doc:name="Logger" doc:id="120389a5-d9d3-4329-9d23-197884cd380b" message="Event Type : #[vars.eventType]"/>
+<logger level="INFO" doc:name="Logger" doc:id="ed1e69df-1830-46bf-80fa-1383ae5aaa49" message="Amazon Path : #[vars.amazonPath]"/>
+<logger level="INFO" doc:name="Logger" doc:id="cdc035cc-abc0-459c-952b-1aedac779062" message="-- Registering event received from Office track -------------"/>
+<choice doc:name="Choice" doc:id="86fbe7a8-896b-4dbb-8814-677e4f24e8fd">
+<when expression="#[!isEmpty(attributes.headers.country_code)]">
+<ee:transform doc:name="Transform Message" doc:id="133fab04-690c-41c8-b087-620f163b3f80">
+<ee:message>
+<ee:set-payload><![CDATA[ %dw 2.0 output application/json 
+ --- 
+ if((attributes.headers.country_code != null) and (contains(p('ot.hispam.countries'),
+ 	attributes.headers.country_code))) 
+ { 
+ 	( if( (lower(attributes.headers.country_code) == 'france') and (!isEmpty(attributes.headers.xml_type )) and (lower(attributes.headers.xml_type) == 'photos') ) 
+ 		{ 
+ 			EVENT_TYPE : attributes.headers.xml_type, 
+ 			EVENT_STATUS : "Pending",
+ 			 OT_TASK_STATUS : attributes.headers.task_status,
+ 			  SITE_NUMBER: attributes.headers.site_number as String default "",
+ 			   TASK_NUMBER: attributes.headers.task_number as Number default 0, 
+ 			   TASK_TYPE: attributes.headers.task_type as String default "", 
+ 			   PAYLOAD : write(payload,"application/xml"), 
+ 			   PAYLOAD_TYPE : "application/xml",
+ 			    CREATED_DATE : now() as String {format: "dd-MMM-yy hh.mm.ss.SSS a"},
+ 			     MODIFIED_DATE : now() as String {format: "dd-MMM-yy hh.mm.ss.SSS a"}, 
+ 			     COUNTRY : attributes.headers.country_code,
+ 			      FILES_DATA : null, 
+ 			      COMPANY_NAME : attributes.headers.company_name as String default "notApplicable" } 
+ 			      else { countries:p('ot.ws.hispam.countries'), 
+ 			      	EVENT_TYPE : attributes.headers.xml_type,
+ 			      	 EVENT_STATUS : "Pending",
+ 			      	  OT_TASK_STATUS : attributes.headers.task_status,
+ 			      	   SITE_NUMBER: attributes.headers.site_number as String default "",
+ 			      	    TASK_NUMBER: attributes.headers.task_number as Number default 0,
+ 			      	     TASK_TYPE: attributes.headers.task_type as String default "",
+ 			      	      PAYLOAD : write({Entry:payload.Entry-"Files"},"application/xml"), 
+PAYLOAD_TYPE : "application/xml", 
+CREATED_DATE : now() as String {format: "dd-MMM-yy hh.mm.ss.SSS a"},
+ MODIFIED_DATE : now() as String {format: "dd-MMM-yy hh.mm.ss.SSS a"}, COUNTRY : attributes.headers.country_code, FILES_DATA : write({Files:payload.Entry..*Files},"application/xml"), COMPANY_NAME : attributes.headers.company_name as String default "notApplicable" } ) } else { EVENT_TYPE : attributes.headers.xml_type, EVENT_STATUS : "Pending", OT_TASK_STATUS : attributes.headers.task_status, SITE_NUMBER: attributes.headers.site_number as String default "", TASK_NUMBER: attributes.headers.task_number as Number default 0, TASK_TYPE: attributes.headers.task_type as String default "", PAYLOAD : write(payload,"application/xml"), PAYLOAD_TYPE : "application/xml", CREATED_DATE : now() as String {format: "dd-MMM-yy hh.mm.ss.SSS a"}, MODIFIED_DATE : now() as String {format: "dd-MMM-yy hh.mm.ss.SSS a"}, COUNTRY : attributes.headers.country_code, FILES_DATA : null, COMPANY_NAME : attributes.headers.company_name as String default "notApplicable" } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+<db:insert doc:name="Insert" doc:id="a272f194-51db-45bf-bcbf-e2319e4d5c12" config-ref="Database_Config">
+<db:sql>INSERT into XXMULE.OFF_TRACK_INTEGRATION_REQ (EVENT_TYPE,OT_TASK_STATUS,PAYLOAD,PAYLOAD_TYPE,EVENT_STATUS,CREATED_DATE,MODIFIED_DATE,COUNTRY, SITE_NUMBER, TASK_NUMBER, TASK_TYPE, FILES_DATA,COMPANY_NAME) VALUES (:eventType,:otTaskStatus,:payload,:payloadType,:eventStatus,:createdDate,:modifiedDate,:country,:siteNumber,:taskNumber,:taskType,:filesData,:companyName)</db:sql>
+<db:input-parameters>
+<![CDATA[ #[{ eventType : payload.EVENT_TYPE, otTaskStatus : payload.OT_TASK_STATUS, payload : payload.PAYLOAD, payloadType : payload.PAYLOAD_TYPE, eventStatus : payload.EVENT_STATUS, createdDate : payload.CREATED_DATE, modifiedDate : payload.MODIFIED_DATE, country : payload.COUNTRY, siteNumber:payload.SITE_NUMBER, taskNumber:payload.TASK_NUMBER, taskType:payload.TASK_TYPE, filesData:payload.FILES_DATA, companyName:payload.COMPANY_NAME }] ]]>
+</db:input-parameters>
+</db:insert>
+<ee:transform doc:name="Transform Message" doc:id="7dd672a9-2447-4555-8253-26e391616d04">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { result : "_Ok_", message : "SUCCESS" } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+</when>
+<otherwise>
+<ee:transform doc:name="Transform Message" doc:id="2141d007-244a-4c5d-81a2-617c4e0618a0">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { result : "Failed", message : "No Country Code Specified" } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+</otherwise>
+</choice>
+<error-handler>
+<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1bdaddbd-de1d-48df-ab36-f8183a8876d2" type="DB:CONNECTIVITY">
+<set-variable value="504" doc:name="Set Variable" doc:id="0187f233-9935-4758-9d2c-dbfb9eaafb16" variableName="httpStatus"/>
+<ee:transform doc:name="Transform Message" doc:id="04d66cff-e0a9-4e13-a80e-6160cf5285f6">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { result : "_Bad_", message : error.detailedDescription } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+</on-error-continue>
+<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cee85950-edb8-4f52-aa87-2ba7f7ab64c4" type="DB:BAD_SQL_SYNTAX, DB:QUERY_EXECUTION, DB:RETRY_EXHAUSTED, EXPRESSION, STREAM_MAXIMUM_SIZE_EXCEEDED">
+<set-variable value="400" doc:name="Set Variable" doc:id="f849f299-0ff5-4a58-acda-b43b0aa79637" variableName="httpStatus"/>
+<ee:transform doc:name="Transform Message" doc:id="a2045fc6-b1ca-47cf-8fba-592fb2b13944">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { result : "_Bad_", message : error.detailedDescription } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+</on-error-continue>
+</error-handler>
+</flow>
+<flow name="update-task-by-id-in-db" doc:id="8f4d4cf4-3bbe-440c-8be3-1a100b73b4da">
+<logger level="INFO" doc:name="Logger" doc:id="29f3d3c9-7855-4033-b9a8-9dc237bcf084" message="#['Start flow update task by id in DB']"/>
+<db:update doc:name="Update" doc:id="0b52fd78-9266-4a83-9299-6e7181e4227c" config-ref="Database_Config">
+<db:sql>
+<![CDATA[ UPDATE XXMULE.OFF_TRACK_INTEGRATION_REQ SET EVENT_STATUS = :eventStatus, RETRY_COUNT=:retryCount WHERE ID=:id ]]>
+</db:sql>
+<db:input-parameters>
+<![CDATA[ #[{ id : attributes.uriParams.id, eventStatus : payload.eventStatus, retryCount : payload.retryCount }] ]]>
+</db:input-parameters>
+</db:update>
+<ee:transform doc:name="Set response payload" doc:id="20c182a9-1356-434a-81b5-b7590dfa50a4">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { meta: { status: "succeeded", messages: [] } } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+<logger level="INFO" doc:name="Logger" doc:id="e2845240-05ef-4968-bd25-64cbcad6ab9f" message="#[%dw 2.0 output application/java --- 'End flow update task by id in DB, status has been updated to ' ++ vars.eventStatus ++ ' and retryCount to ' ++ (vars.retryCount default '0') ++ ' for id ' ++ vars.id]"/>
+<error-handler>
+<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="65d531d5-785e-4bd0-8c9c-141c5b363b61" type="DB:CONNECTIVITY">
+<set-variable value="504" doc:name="Set httpStatus" doc:id="93306631-9ce4-4132-8df0-aeab24f9cb54" variableName="httpStatus"/>
+<ee:transform doc:name="Set error payload" doc:id="a2b114bc-98dc-45a3-b180-736e84b97a9c">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { result : "_Bad_", message : error.detailedDescription } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+</on-error-continue>
+<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ccbddffb-2c4e-4eca-adf3-03e307573935" type="DB:BAD_SQL_SYNTAX, DB:QUERY_EXECUTION, DB:RETRY_EXHAUSTED, EXPRESSION, STREAM_MAXIMUM_SIZE_EXCEEDED">
+<set-variable value="400" doc:name="Set httpStatus" doc:id="bc8e3fdc-5789-453e-a4da-03231cae0999" variableName="httpStatus"/>
+<ee:transform doc:name="Set error payload" doc:id="ea977007-071c-4608-8d60-79fbfdf44618">
+<ee:message>
+<ee:set-payload>
+<![CDATA[ %dw 2.0 output application/json --- { result : "_Bad_", message : error.detailedDescription } ]]>
+</ee:set-payload>
+</ee:message>
+</ee:transform>
+</on-error-continue>
+</error-handler>
+</flow>
+</mule>
